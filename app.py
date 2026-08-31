@@ -142,6 +142,58 @@ def dashboard():
 
     monthly_income = cur.fetchone()['income']
 
+    # New Members This Month
+    cur.execute("""
+        SELECT COUNT(*) AS new_members
+        FROM members
+        WHERE strftime('%Y-%m', joining_date) = strftime('%Y-%m', 'now')
+    """)
+
+    new_members = cur.fetchone()['new_members']
+
+
+    # Member Growth - Monthly
+    cur.execute("""
+        SELECT
+            strftime('%Y-%m', joining_date) AS month,
+            COUNT(*) AS total
+        FROM members
+        GROUP BY strftime('%Y-%m', joining_date)
+        ORDER BY month
+    """)
+
+    # member_growth = cur.fetchall()
+
+    member_growth = [
+        {
+            'month': row['month'],
+            'total': row['total']
+        }
+        for row in cur.fetchall()
+    ]
+
+    member_growth_labels = [row['month'] for row in member_growth]
+    member_growth_totals = [row['total'] for row in member_growth]
+
+    # Total Revenue
+    cur.execute("""
+        SELECT IFNULL(SUM(amount), 0) AS total_revenue
+        FROM payments
+    """)
+
+    total_revenue = cur.fetchone()['total_revenue']
+
+
+    # Today's Attendance
+    cur.execute("""
+        SELECT COUNT(*) AS today_attendance
+        FROM attendance
+        WHERE attendance_date = date('now')
+        AND status = 'Present'
+    """)
+
+    today_attendance = cur.fetchone()['today_attendance']
+
     conn.close()
 
     return render_template(
@@ -150,7 +202,13 @@ def dashboard():
         active_members=active_members,
         inactive_members=inactive_members,
         expired_memberships=expired_memberships,
-        monthly_income=monthly_income
+        monthly_income=monthly_income,
+        today_attendance=today_attendance,
+        new_members=new_members,
+        total_revenue=total_revenue,
+        member_growth=member_growth,
+        member_growth_labels=member_growth_labels,
+        member_growth_totals=member_growth_totals
     )
 
 
