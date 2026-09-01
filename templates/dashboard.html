@@ -118,6 +118,8 @@
 
                 <!-- Right -->
 
+                <!-- Right -->
+
                 <div class="col-lg-6">
 
                     <div
@@ -128,34 +130,173 @@
                         <div class="input-group" style="max-width:280px;">
 
                             <span class="input-group-text bg-white">
-
                                 <i class="fa fa-search"></i>
-
                             </span>
 
                             <input type="text" class="form-control" placeholder="Search...">
 
                         </div>
 
+
                         <!-- Notification -->
 
-                        <button class="btn btn-light position-relative">
+                        <div class="dropdown">
 
-                            <i class="fa-solid fa-bell"></i>
+                            <button class="btn btn-light position-relative" type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false">
 
-                            <span
-                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <i class="fa-solid fa-bell"></i>
 
-                                3
+                                {% if expiry_alerts|length > 0 %}
 
-                            </span>
+                                <span
+                                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
 
-                        </button>
+                                    {{ expiry_alerts|length }}
 
-                        <!-- Profile -->
+                                </span>
 
-                        <img src="https://i.pravatar.cc/100?img=12" width="45" height="45"
-                            class="rounded-circle shadow">
+                                {% endif %}
+
+                            </button>
+
+
+                            <!-- Notification Dropdown -->
+
+                            <div class="dropdown-menu dropdown-menu-end shadow" style="width: 330px;">
+
+                                <div class="px-3 py-2 border-bottom">
+
+                                    <h6 class="mb-0 fw-bold">
+                                        🔔 Notifications
+                                    </h6>
+
+                                </div>
+
+
+                                {% if expiry_alerts %}
+
+                                {% for alert in expiry_alerts %}
+
+                                <div class="px-3 py-3 border-bottom">
+
+                                    <div class="d-flex gap-2">
+
+                                        <div>
+                                            ⚠️
+                                        </div>
+
+                                        <div>
+
+                                            <strong>
+                                                {{ alert.member_name }}
+                                            </strong>
+
+                                            <div class="small text-muted">
+
+                                                Membership expires in
+                                                {{ alert.days_left }} day{% if alert.days_left != 1 %}s{% endif %}.
+
+                                            </div>
+
+                                            <div class="small mt-1">
+
+                                                Plan: {{ alert.plan_name }}
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                {% endfor %}
+
+                                {% else %}
+
+                                <div class="text-center py-4">
+
+                                    <div style="font-size:28px;">
+                                        ✅
+                                    </div>
+
+                                    <div class="text-muted small mt-2">
+
+                                        No new notifications
+
+                                    </div>
+
+                                </div>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Admin Profile -->
+
+                        <div class="dropdown">
+
+                            <button class="btn p-0 border-0 bg-transparent" type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false">
+
+                                <div class="rounded-circle shadow d-flex align-items-center justify-content-center fw-bold text-white"
+                                    style="
+                        width:45px;
+                        height:45px;
+                        background: linear-gradient(135deg, #667eea, #764ba2);
+                        font-size:18px;
+                    ">
+
+                                    A
+
+                                </div>
+
+                            </button>
+
+
+                            <!-- Profile Dropdown -->
+
+                            <div class="dropdown-menu dropdown-menu-end shadow" style="width:220px;">
+
+                                <div class="px-3 py-3 border-bottom">
+
+                                    <div class="fw-bold">
+                                        Admin
+                                    </div>
+
+                                    <small class="text-muted">
+                                        Gym Administrator
+                                    </small>
+
+                                </div>
+
+
+                                <a href="{{url_for('profile')}}" class="dropdown-item py-2">
+                                    <i class="fa fa-user me-2"></i>
+                                    Profile
+                                </a>
+
+                                <a href="{{ url_for('settings') }}" class="dropdown-item py-2">
+                                    <i class="fa fa-cog me-2"></i>
+                                    Settings
+                                </a>
+
+                                <div class="dropdown-divider"></div>
+
+                                <a href="{{ url_for('logout') }}" class="dropdown-item py-2 text-danger">
+
+                                    <i class="fa fa-sign-out-alt me-2"></i>
+                                    Logout
+
+                                </a>
+
+                            </div>
+
+                        </div>
 
                     </div>
 
@@ -473,6 +614,152 @@
 
         </div>
 
+        <!-- Monthly Revenue Chart -->
+        <div class="panel mt-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                <div>
+                    <h5 class="mb-1 fw-bold">
+                        💰 Monthly Revenue
+                    </h5>
+
+                    <small class="text-muted">
+                        Monthly gym revenue
+                    </small>
+                </div>
+
+            </div>
+
+            <div style="height: 350px;">
+                <canvas id="monthlyRevenueChart"></canvas>
+            </div>
+
+        </div>
+
+
+        <!-- Attendance Trend Chart -->
+        <div class="panel mt-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                <div>
+                    <h5 class="mb-1 fw-bold">
+                        📅 Attendance Trend
+                    </h5>
+
+                    <small class="text-muted">
+                        Member attendance for the last 7 days
+                    </small>
+                </div>
+
+            </div>
+
+            <div style="height: 350px;">
+                <canvas id="attendanceTrendChart"></canvas>
+            </div>
+
+        </div>
+
+        <!-- Membership Expiry Alerts -->
+        <div class="panel mt-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="mb-1 fw-bold">
+                        ⚠️ Membership Expiry Alerts
+                    </h5>
+
+                    <small class="text-muted">
+                        Memberships expiring within the next 7 days
+                    </small>
+                </div>
+            </div>
+
+            {% if expiry_alerts %}
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Plan</th>
+                            <th>Expiry Date</th>
+                            <th>Days Left</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for alert in expiry_alerts %}
+
+                        <tr>
+
+                            <td>
+                                <strong>{{ alert.member_name }}</strong>
+                            </td>
+
+                            <td>
+                                {{ alert.plan_name }}
+                            </td>
+
+                            <td>
+                                {{ alert.end_date }}
+                            </td>
+
+                            <td>
+
+                                {% if alert.days_left == 0 %}
+
+                                <span class="badge bg-danger">
+                                    Expires Today
+                                </span>
+
+                                {% elif alert.days_left <= 3 %} <span class="badge bg-warning text-dark">
+                                    {{ alert.days_left }} Days
+                                    </span>
+
+                                    {% else %}
+
+                                    <span class="badge bg-info">
+                                        {{ alert.days_left }} Days
+                                    </span>
+
+                                    {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="text-center py-4">
+
+                <div style="font-size: 35px;">
+                    ✅
+                </div>
+
+                <p class="text-muted mb-0">
+                    No memberships expiring in the next 7 days.
+                </p>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
         <div class="panel mt-4">
 
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -574,6 +861,111 @@
             }
         });
     </script>
+
+    <script>
+        const monthlyRevenueData = {{ monthly_revenue | tojson }};
+        // const monthlyRevenueData = { monthly_revenue, tojson };
+
+        const revenueLabels = monthlyRevenueData.map(item => item.month);
+        const revenueTotals = monthlyRevenueData.map(item => item.revenue);
+
+        const revenueCtx = document.getElementById('monthlyRevenueChart');
+
+        if (revenueCtx) {
+
+            new Chart(revenueCtx, {
+                type: 'bar',
+
+                data: {
+                    labels: revenueLabels,
+
+                    datasets: [{
+                        label: 'Monthly Revenue',
+                        data: revenueTotals,
+                        borderWidth: 1
+                    }]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+
+        }
+    </script>
+
+    <script>
+        const attendanceTrendData = {{ attendance_trend | tojson }};
+
+        // const attendanceLabels = attendanceTrendData.map(item => item.date);
+
+        const attendanceLabels = attendanceTrendData.map(item => {
+            const date = new Date(item.date + "T00:00:00");
+
+            return date.toLocaleDateString('en-US', {
+                weekday: 'short'
+            });
+        });
+
+        const attendanceTotals = attendanceTrendData.map(item => item.total);
+
+        const attendanceCtx = document.getElementById('attendanceTrendChart');
+
+        if (attendanceCtx) {
+
+            new Chart(attendanceCtx, {
+                type: 'line',
+
+                data: {
+                    labels: attendanceLabels,
+
+                    datasets: [{
+                        label: 'Present Members',
+                        data: attendanceTotals,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 5
+                    }]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+
+        }
+    </script>
+
 
 </body>
 

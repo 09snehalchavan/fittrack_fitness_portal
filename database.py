@@ -141,35 +141,6 @@ def create_payments_table():
     conn.commit()
     conn.close()
 
-def create_attendance_table():
-
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS attendance(
-
-            attendance_id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            member_id INTEGER NOT NULL,
-
-            attendance_date DATE DEFAULT CURRENT_DATE,
-
-            check_in_time TEXT,
-
-            status TEXT DEFAULT 'Present',
-
-            FOREIGN KEY(member_id)
-            REFERENCES members(member_id)
-
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
-    print("Attendance table created")
-
 
 def create_attendance_table():
 
@@ -203,3 +174,33 @@ def create_attendance_table():
     conn.close()
 
     print("Attendance table created")
+
+
+def create_settings_table():
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS settings(
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            user_id INTEGER UNIQUE NOT NULL,
+
+            membership_notifications INTEGER DEFAULT 1,
+
+            dashboard_notifications INTEGER DEFAULT 1,
+
+            theme TEXT DEFAULT 'light',
+
+            FOREIGN KEY(user_id)
+            REFERENCES users(id)
+
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+    print("Settings table created")

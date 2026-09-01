@@ -13,6 +13,7 @@ create_membership_table()
 create_member_membership_table()
 create_payments_table()
 create_attendance_table()
+create_settings_table()
 
 app = Flask(__name__)
 app.secret_key = 'gym-secret-key'
@@ -175,6 +176,80 @@ def dashboard():
     member_growth_labels = [row['month'] for row in member_growth]
     member_growth_totals = [row['total'] for row in member_growth]
 
+
+    # Monthly Revenue
+    cur.execute("""
+        SELECT
+            strftime('%Y-%m', payment_date) AS month,
+            IFNULL(SUM(amount), 0) AS revenue
+        FROM payments
+        GROUP BY strftime('%Y-%m', payment_date)
+        ORDER BY month
+    """)
+
+    monthly_revenue = [
+        {
+            'month': row['month'],
+            'revenue': row['revenue']
+        }
+        for row in cur.fetchall()
+    ]
+
+    # # Attendance Trend - Last 7 Days
+    # cur.execute("""
+    #     SELECT
+    #         attendance_date AS date,
+    #         COUNT(*) AS total
+    #     FROM attendance
+    #     WHERE attendance_date >= DATE('now', '-6 days')
+    #     AND status = 'Present'
+    #     GROUP BY attendance_date
+    #     ORDER BY attendance_date
+    # """)
+
+    # attendance_trend = [
+    #     {
+    #         'date': row['date'],
+    #         'total': row['total']
+    #     }
+    #     for row in cur.fetchall()
+    # ]
+
+    # Attendance Trend - Last 7 Days
+
+    cur.execute("""
+        SELECT
+            attendance_date AS date,
+            COUNT(*) AS total
+        FROM attendance
+        WHERE attendance_date >= DATE('now', '-6 days')
+        AND attendance_date <= DATE('now')
+        AND status = 'Present'
+        GROUP BY attendance_date
+    """)
+
+    attendance_data = {
+        row['date']: row['total']
+        for row in cur.fetchall()
+    }
+
+    attendance_trend = []
+
+    for i in range(6, -1, -1):
+
+        cur.execute(
+            "SELECT DATE('now', ? || ' days') AS date",
+            (f"-{i}",)
+        )
+
+        date_row = cur.fetchone()
+        current_date = date_row['date']
+
+        attendance_trend.append({
+            'date': current_date,
+            'total': attendance_data.get(current_date, 0)
+        })
+
     # Total Revenue
     cur.execute("""
         SELECT IFNULL(SUM(amount), 0) AS total_revenue
@@ -183,6 +258,38 @@ def dashboard():
 
     total_revenue = cur.fetchone()['total_revenue']
 
+
+    # Membership Expiry Alerts - Next 7 Days
+
+    cur.execute("""
+        SELECT
+            m.full_name AS member_name,
+            mp.plan_name,
+            mm.end_date,
+            CAST(
+                julianday(mm.end_date) - julianday(DATE('now'))
+                AS INTEGER
+            ) AS days_left
+        FROM member_membership mm
+        JOIN members m
+            ON mm.member_id = m.member_id
+        JOIN membership_plan mp
+            ON mm.plan_id = mp.plan_id
+        WHERE mm.status = 'Active'
+        AND mm.end_date >= DATE('now')
+        AND mm.end_date <= DATE('now', '+7 days')
+        ORDER BY mm.end_date ASC
+    """)
+
+    expiry_alerts = [
+        {
+            'member_name': row['member_name'],
+            'plan_name': row['plan_name'],
+            'end_date': row['end_date'],
+            'days_left': row['days_left']
+        }
+        for row in cur.fetchall()
+    ]
 
     # Today's Attendance
     cur.execute("""
@@ -193,6 +300,7 @@ def dashboard():
     """)
 
     today_attendance = cur.fetchone()['today_attendance']
+
 
     conn.close()
 
@@ -208,7 +316,10 @@ def dashboard():
         total_revenue=total_revenue,
         member_growth=member_growth,
         member_growth_labels=member_growth_labels,
-        member_growth_totals=member_growth_totals
+        member_growth_totals=member_growth_totals,
+        monthly_revenue=monthly_revenue,
+        attendance_trend=attendance_trend,
+        expiry_alerts=expiry_alerts
     )
 
 
@@ -1414,6 +1525,175 @@ def change_password():
     conn.close()
 
     return render_template("change_password.html")
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+
+    if 'admin' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Current admin
+    cur.execute(
+        "SELECT * FROM users WHERE email=?",
+        (session['admin'],)
+    )
+
+    admin = cur.fetchone()
+
+    if not admin:
+        conn.close()
+        flash('Admin account not found!', 'danger')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+
+        name = request.form['name'].strip()
+        email = request.form['email'].strip()
+        mobile = request.form['mobile'].strip()
+
+        if not name or not email or not mobile:
+            flash('All fields are required!', 'danger')
+            conn.close()
+            return redirect(url_for('profile'))
+
+        try:
+
+            cur.execute("""
+                UPDATE users
+                SET name=?,
+                    email=?,
+                    mobile=?
+                WHERE id=?
+            """, (
+                name,
+                email,
+                mobile,
+                admin['id']
+            ))
+
+            conn.commit()
+
+            # Update session
+            session['admin'] = email
+            session['admin_name'] = name
+
+            flash('Profile updated successfully!', 'success')
+
+        except sql.IntegrityError:
+
+            flash('Email already exists!', 'danger')
+
+        conn.close()
+
+        return redirect(url_for('profile'))
+
+    conn.close()
+
+    return render_template(
+        'profile.html',
+        admin=admin
+    )
+
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+
+    if 'admin' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Get admin
+    cur.execute(
+        "SELECT * FROM users WHERE email=?",
+        (session['admin'],)
+    )
+
+    admin = cur.fetchone()
+
+    if not admin:
+        conn.close()
+        return redirect(url_for('login'))
+
+    # Check settings
+    cur.execute(
+        "SELECT * FROM settings WHERE user_id=?",
+        (admin['id'],)
+    )
+
+    user_settings = cur.fetchone()
+
+    # Create default settings if not exists
+    if not user_settings:
+
+        cur.execute("""
+            INSERT INTO settings(
+                user_id,
+                membership_notifications,
+                dashboard_notifications,
+                theme
+            )
+            VALUES (?, 1, 1, 'light')
+        """, (admin['id'],))
+
+        conn.commit()
+
+        cur.execute(
+            "SELECT * FROM settings WHERE user_id=?",
+            (admin['id'],)
+        )
+
+        user_settings = cur.fetchone()
+
+    # Save settings
+    if request.method == 'POST':
+
+        membership_notifications = 1 if request.form.get(
+            'membership_notifications'
+        ) else 0
+
+        dashboard_notifications = 1 if request.form.get(
+            'dashboard_notifications'
+        ) else 0
+
+        theme = request.form.get('theme', 'light')
+
+        if theme not in ['light', 'dark']:
+            theme = 'light'
+
+        cur.execute("""
+            UPDATE settings
+            SET membership_notifications=?,
+                dashboard_notifications=?,
+                theme=?
+            WHERE user_id=?
+        """, (
+            membership_notifications,
+            dashboard_notifications,
+            theme,
+            admin['id']
+        ))
+
+        conn.commit()
+
+        flash('Settings saved successfully!', 'success')
+
+        conn.close()
+
+        return redirect(url_for('settings'))
+
+    conn.close()
+
+    return render_template(
+        'settings.html',
+        settings=user_settings
+    )
+
 
 if __name__ == '__main__':
     app.run(debug=True)
