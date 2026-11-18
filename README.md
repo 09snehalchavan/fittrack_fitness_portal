@@ -1,143 +1,47 @@
-# 🏋️ FitTrack Fitness Portal
+# Sanskar Kuber Chavan — Personal Portfolio
 
-FitTrack Fitness Portal is a web-based fitness and gym management system developed using **Python Flask**. The system helps manage gym members, fitness-related activities, and administrative operations through separate **Admin and Member** functionalities.
+Static front end (HTML, CSS, vanilla JS) with a PHP contact-form backend and optional MySQL storage.
 
-## 🚀 Features
+## Structure
 
-### 👨‍💼 Admin
-
-* Admin Login
-* Manage gym members
-* Add, update and delete member information
-* View member details
-* Manage fitness-related records
-* Admin dashboard
-
-### 🧑‍🤝‍🧑 Member
-
-* Member Login
-* View personal information
-* Access fitness-related information
-* View available gym services
-* Member dashboard
-
-## 🛠️ Technologies Used
-
-* **Backend:** Python, Flask
-* **Frontend:** HTML5, CSS3, Bootstrap
-* **Database:** MySQL
-* **Templating:** Jinja2
-* **Tools:** VS Code, Git, GitHub
-
-## 📂 Project Structure
-
-```text
-FitTrack-Fitness-Portal/
-│
-├── static/
-├── templates/
-├── app.py
-├── requirements.txt
-└── README.md
+```
+index.html            Main page (all sections)
+404.html              Custom not-found page (uses absolute /assets paths, so deploy at the domain root)
+.htaccess             404 routing, security headers, caching, compression (Apache)
+assets/css/style.css  Design system and styles
+assets/js/script.js   Nav, scroll reveal, form validation and submit
+assets/images/        favicon.svg, og-image.svg / og-image.png
+php/contact.php       Contact form endpoint
+includes/config.php   Mail and database settings (blocked from web access)
+database/database.sql Optional table for storing messages
 ```
 
-## ⚙️ Installation & Setup
+## Deploy (shared hosting / cPanel / Hostinger)
 
-### 1. Clone the Repository
+1. Upload everything to `public_html` (keep the folder layout).
+2. Open `includes/config.php` and set `mail_from` to an address on your domain, for example `no-reply@yourdomain.com`. This makes `mail()` delivery far more reliable. Messages go to `chavansanskar19@gmail.com`.
+3. Test the form once on the live site. If email does not arrive, create a mailbox on your host and check its spam folder, or enable database storage (below) as a backup.
+4. In `index.html`, add absolute URLs once you have your domain:
+   - `<meta property="og:image" content="https://yourdomain.com/assets/images/og-image.png">`
+   - `<meta property="og:url" content="https://yourdomain.com/">` and `<link rel="canonical" href="https://yourdomain.com/">`
 
-```bash
-git clone https://github.com/09snehalchavan/gym.git
-```
+PHP 7.4+ is required (works on 8.x). The form needs PHP, so it will not run on Netlify static hosting. Use a PHP host.
 
-### 2. Navigate to the Project Folder
+## Optional: store messages in MySQL
 
-```bash
-cd gym
-```
+1. Import `database/database.sql` in phpMyAdmin.
+2. In `includes/config.php`, set `'enabled' => true` and fill in host, name, user, password.
 
-### 3. Create a Virtual Environment
+## Spam protection included
 
-```bash
-python -m venv venv
-```
+CSRF token, hidden honeypot field, minimum fill time (3s), rate limit per session and per IP (3 per 10 min), strict server-side validation, header-injection-safe email, prepared SQL statements.
 
-### 4. Activate the Virtual Environment
+## Project previews
 
-**Windows:**
+Card images are live screenshots loaded from `image.thum.io`. If one fails to load, the card shows the project name instead. To use your own images, save screenshots in `assets/images/` and change the `src` of that card's `<img>`.
 
-```bash
-venv\Scripts\activate
-```
+## Editing content
 
-### 5. Install Required Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 6. Configure the Database
-
-Create the required MySQL database and update the database configuration in the Flask application according to your local MySQL credentials.
-
-### 7. Run the Application
-
-```bash
-python app.py
-```
-
-Then open the application in your browser:
-
-```text
-http://127.0.0.1:5000/
-```
-
-## 🔐 Login
-
-The application provides separate login functionality for:
-
-* **Admin**
-* **Member**
-
-> For security reasons, actual usernames and passwords are not included in this public repository. Use the credentials configured in the application/database.
-
-## 🎯 Project Objective
-
-The main objective of FitTrack Fitness Portal is to provide a simple and efficient web-based platform for managing gym operations and member information while demonstrating practical implementation of **Flask, MySQL, CRUD operations, authentication, templates, and responsive web design**.
-
-## 🔮 Future Enhancements
-
-* Online membership registration
-* Workout plan management
-* Diet plan management
-* Payment and subscription tracking
-* Attendance management
-* Email notifications
-* Fitness progress tracking
-* Deployment with a cloud platform
-
-## 👩‍💻 Developer
-
-**Snehal Chavan**
-
-GitHub: https://github.com/09snehalchavan
-
----
-
-⭐ If you find this project useful, feel free to star the repository!
-
-## 🔐 Demo Credentials
-
-### Admin Login
-
-* 📧 **Email:** `admin@gym.com`
-* 🔑 **Password:** `admin@123`
-
-> These credentials are provided for demonstration purposes only.
-
-### 👤 Member Login
-
-Use the member credentials configured in the application for accessing the Member Dashboard.
-
-## 🌐 Live Demo
-
-👉 [https://lnkd.in/ddg-TrVN](https://fittrack-fitness-portal.onrender.com/)
+- Phone, email, WhatsApp number: search `7420899489` in `index.html`.
+- Projects: each is one `<article class="card project">` block.
+- Colours: CSS variables at the top of `style.css`.
